@@ -1,38 +1,76 @@
-import { Form, ActionFunction, redirect } from "remix";
+import {
+  Form,
+  ActionFunction,
+  redirect,
+  useActionData,
+  useTransition,
+} from "remix";
+import invariant from "tiny-invariant";
 import { createPost } from "~/post";
 
-export const action: ActionFunction = async ({ request }) => {
-    const formData = await request.formData();
+type PostError = {
+  title?: boolean;
+  slug?: boolean;
+  markdown?: boolean;
+};
 
-    const title = formData.get("title");
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData();
+  const title = formData.get("title");
   const slug = formData.get("slug");
   const markdown = formData.get("markdown");
+
+  const errors: PostError = {};
+  if (!title) errors.title = true;
+  if (!slug) errors.slug = true;
+  if (!markdown) errors.markdown = true;
+
+  if (Object.keys(errors).length) {
+    return errors;
+  }
+
+  invariant(
+    typeof title === "string" &&
+      typeof slug === "string" &&
+      typeof markdown === "string"
+  );
 
   await createPost({ title, slug, markdown });
 
   return redirect("/admin");
-}
+};
 
 const NewPost = () => {
+  const errors = useActionData();
+  const transition = useTransition();
   return (
     <Form method="post">
       <p>
         <label>
-          Post Title: <input type="text" name="title" />
+          Post Title:
+          {errors?.title && <em>Title is required</em>}
+          <input type="text" name="title" />
         </label>
       </p>
       <p>
         <label>
-          Post Slug: <input type="text" name="slug" />
+          Post Slug:
+          {errors?.slug && <em>Slug is required</em>}
+          <input type="text" name="slug" />
         </label>
       </p>
       <p>
-        <label htmlFor="markdown">Markdown:</label>
+        <label htmlFor="markdown">
+          Markdown:
+          {errors?.markdown && <em>Markdown is required</em>}
+        </label>
         <br />
         <textarea id="markdown" rows={20} name="markdown" />
       </p>
       <p>
-        <button type="submit">Create Post</button>
+        <button type="submit">
+          {transition.submission ? "Creating..." : "Create Post"}
+        </button>
       </p>
     </Form>
   );
