@@ -13,6 +13,12 @@ export type PostMarkdownAttributes = {
   title: string;
 };
 
+export type NewPost = {
+  title: string;
+  slug: string;
+  markdown: string;
+};
+
 function isValidPostAttributes(
   attributes: any
 ): attributes is PostMarkdownAttributes {
@@ -49,4 +55,10 @@ export const getPost = async (slug: string) => {
   );
   const html = marked(body);
   return { slug, title: attributes.title, html };
+};
+
+export const createPost = async (post: NewPost) => {
+  const md = `---\ntitle: ${post.title}\n---\n\n${post.markdown}`;
+  await fs.writeFile(path.join(postsPath, post.slug + ".md"), md);
+  return getPost(post.slug);
 };
